@@ -4,5 +4,6 @@ dist
 build
 *.log
 .env
+
 .env.development.local
 .env.test.local
