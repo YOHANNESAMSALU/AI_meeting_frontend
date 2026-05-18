@@ -12,7 +12,7 @@ export default function ActionItemsCard({ actionItems }) {
   };
 
   return (
-    <div className="rounded-[28px] border border-white/70 bg-[color:var(--surface-strong)] p-6 shadow-[0_28px_90px_-58px_rgba(15,23,42,0.7)] backdrop-blur-xl">
+    <div className="glass-panel rounded-[30px] p-6">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff3e8] text-[#ea580c]">
@@ -27,7 +27,7 @@ export default function ActionItemsCard({ actionItems }) {
         <button
           type="button"
           onClick={handleCopy}
-          className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--shell-line)] bg-white/85 text-[var(--shell-soft)] transition-all hover:border-orange-300 hover:text-[#c2410c]"
+          className="glass-pill inline-flex h-11 w-11 items-center justify-center rounded-2xl text-[var(--shell-soft)] transition-all hover:text-[#c2410c]"
           title="Copy to clipboard"
         >
           {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
@@ -35,20 +35,26 @@ export default function ActionItemsCard({ actionItems }) {
       </div>
 
       <div className="mt-5 space-y-3">
-        {actionItems.map((item, index) => (
-          <div key={index} className="flex items-start gap-3 rounded-2xl border border-[var(--shell-line)] bg-white/80 px-4 py-3">
-            <input
-              type="checkbox"
-              className="mt-1 h-4 w-4 flex-shrink-0 cursor-pointer accent-[var(--chat-primary)]"
-            />
-            <div className="min-w-0 flex-1">
-              <p className="text-sm leading-7 text-[var(--shell-copy)]">{item.task}</p>
-              <span className="mt-2 inline-flex items-center rounded-full bg-[var(--chat-primary-soft)] px-3 py-1 text-xs font-medium text-[var(--chat-primary-strong)]">
-                {item.assignee}
-              </span>
+        {actionItems.length ? (
+          actionItems.map((item, index) => (
+            <div key={index} className="glass-subcard flex items-start gap-3 rounded-2xl px-4 py-3">
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4 flex-shrink-0 cursor-pointer accent-[var(--chat-primary)]"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm leading-7 text-[var(--shell-copy)]">{item.task}</p>
+                <span className="glass-pill mt-2 inline-flex items-center rounded-full bg-[var(--chat-primary-soft)] px-3 py-1 text-xs font-medium text-[var(--chat-primary-strong)]">
+                  {item.assignee}
+                </span>
+              </div>
             </div>
+          ))
+        ) : (
+          <div className="glass-subcard rounded-2xl px-4 py-3 text-sm leading-7 text-[var(--shell-soft)]">
+            No action items were extracted automatically. You can still send the recap and refine assignments later.
           </div>
-        ))}
+        )}
       </div>
     </div>
   );

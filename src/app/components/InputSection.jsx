@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import AudioSection from './AudioSection';
 
-export default function InputSection({ notes, setNotes, onGenerate, isLoading, onAudioTranscript }) {
+export default function InputSection({ notes, setNotes, onGenerate, isLoading, onAudioTranscript, user, onAuthError }) {
   const [inputMode, setInputMode] = useState('text');
   const [isTranscriptHighlighted, setIsTranscriptHighlighted] = useState(false);
   const [transcriptInsertCount, setTranscriptInsertCount] = useState(0);
@@ -85,7 +85,13 @@ export default function InputSection({ notes, setNotes, onGenerate, isLoading, o
   };
 
   return (
-    <div className="rounded-[32px] border border-white/70 bg-[color:var(--surface-strong)] p-4 shadow-[0_28px_90px_-54px_rgba(15,23,42,0.72)] backdrop-blur-xl sm:p-6">
+    <div className="glass-panel rounded-[32px] p-4 sm:p-6">
+      {!user && (
+        <div className="mb-4 rounded-lg bg-blue-50 p-4 text-sm text-blue-600">
+          Please sign in to generate meeting summaries and save your history.
+        </div>
+      )}
+
       <div className="flex flex-col gap-4 border-b border-[var(--shell-line)] pb-5 lg:flex-row lg:items-end lg:justify-between">
         <div className="max-w-2xl">
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--chat-primary-strong)]">
@@ -120,7 +126,7 @@ export default function InputSection({ notes, setNotes, onGenerate, isLoading, o
       </div>
 
       {inputMode === 'text' ? (
-        <div className="mt-6 rounded-[28px] border border-[var(--shell-line)] bg-transparent p-4 shadow-inner shadow-white/70 sm:p-5">
+        <div className="glass-subcard mt-6 rounded-[28px] p-4 sm:p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="flex flex-wrap items-center gap-2">
@@ -163,7 +169,7 @@ export default function InputSection({ notes, setNotes, onGenerate, isLoading, o
             className={`mt-4 min-h-[280px] w-full resize-none rounded-[24px] border border-transparent px-4 py-4 text-sm leading-7 text-[var(--shell-ink)] outline-none transition-all placeholder:text-[color:rgba(71,85,105,0.75)] focus:border-[var(--chat-primary)]/25 focus:bg-white focus:ring-4 focus:ring-[var(--chat-primary-ring)] sm:text-base ${
               isTranscriptHighlighted
                 ? 'border-[var(--chat-primary)]/25 bg-white ring-4 ring-[var(--chat-primary-ring)]'
-                : 'bg-[var(--surface-muted)]'
+                : 'glass-input'
             }`}
             disabled={isLoading}
           />
@@ -197,8 +203,8 @@ export default function InputSection({ notes, setNotes, onGenerate, isLoading, o
           </div>
         </div>
       ) : (
-        <div className="mt-6 rounded-[28px] border border-[var(--shell-line)] bg-transparent p-4 shadow-inner shadow-white/70 sm:p-5">
-          <AudioSection onTranscript={handleAudioTranscript} />
+        <div className="glass-subcard mt-6 rounded-[28px] p-4 sm:p-5">
+          <AudioSection onTranscript={handleAudioTranscript} onAuthError={onAuthError} />
         </div>
       )}
     </div>

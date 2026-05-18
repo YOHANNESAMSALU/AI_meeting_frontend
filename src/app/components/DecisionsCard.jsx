@@ -11,7 +11,7 @@ export default function DecisionsCard({ decisions }) {
   };
 
   return (
-    <div className="rounded-[28px] border border-white/70 bg-[color:var(--surface-strong)] p-6 shadow-[0_28px_90px_-58px_rgba(15,23,42,0.7)] backdrop-blur-xl">
+    <div className="glass-panel rounded-[30px] p-6">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
@@ -26,7 +26,7 @@ export default function DecisionsCard({ decisions }) {
         <button
           type="button"
           onClick={handleCopy}
-          className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--shell-line)] bg-white/85 text-[var(--shell-soft)] transition-all hover:border-emerald-300 hover:text-emerald-700"
+          className="glass-pill inline-flex h-11 w-11 items-center justify-center rounded-2xl text-[var(--shell-soft)] transition-all hover:text-emerald-700"
           title="Copy to clipboard"
         >
           {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
@@ -34,12 +34,18 @@ export default function DecisionsCard({ decisions }) {
       </div>
 
       <ul className="mt-5 space-y-3">
-        {decisions.map((decision, index) => (
-          <li key={index} className="flex items-start gap-3 rounded-2xl border border-[var(--shell-line)] bg-white/80 px-4 py-3">
-            <div className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-emerald-500" />
-            <span className="text-sm leading-7 text-[var(--shell-copy)]">{decision}</span>
+        {decisions.length ? (
+          decisions.map((decision, index) => (
+            <li key={index} className="glass-subcard flex items-start gap-3 rounded-2xl px-4 py-3">
+              <div className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-emerald-500" />
+              <span className="text-sm leading-7 text-[var(--shell-copy)]">{decision}</span>
+            </li>
+          ))
+        ) : (
+          <li className="glass-subcard rounded-2xl px-4 py-3 text-sm leading-7 text-[var(--shell-soft)]">
+            No explicit decisions were detected, but the summary above is still ready to share.
           </li>
-        ))}
+        )}
       </ul>
     </div>
   );

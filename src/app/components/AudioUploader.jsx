@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { FileAudio, Loader2, Trash2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatFileSize, transcribeAudioFile } from './audioUtils';
+import { isUnauthorizedError, clearStoredSession } from '../lib/api';
 
-export default function AudioUploader({ onTranscript }) {
+export default function AudioUploader({ onTranscript, onAuthError }) {
   const [audioFile, setAudioFile] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -126,6 +127,12 @@ export default function AudioUploader({ onTranscript }) {
       }
 
       if (!isMountedRef.current) {
+        return;
+      }
+
+      if (isUnauthorizedError(error)) {
+        clearStoredSession();
+        onAuthError();
         return;
       }
 

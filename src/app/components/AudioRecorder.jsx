@@ -13,8 +13,9 @@ import {
   stopMediaStream,
   transcribeAudioFile,
 } from './audioUtils';
+import { isUnauthorizedError, clearStoredSession } from '../lib/api';
 
-export default function AudioRecorder({ onTranscript }) {
+export default function AudioRecorder({ onTranscript, onAuthError }) {
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -297,6 +298,12 @@ export default function AudioRecorder({ onTranscript }) {
       }
 
       if (!isMountedRef.current) {
+        return;
+      }
+
+      if (isUnauthorizedError(error)) {
+        clearStoredSession();
+        onAuthError();
         return;
       }
 

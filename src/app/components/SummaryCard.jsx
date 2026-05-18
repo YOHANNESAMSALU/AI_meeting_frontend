@@ -11,7 +11,7 @@ export default function SummaryCard({ summary }) {
   };
 
   return (
-    <div className="rounded-[28px] border border-white/70 bg-[color:var(--surface-strong)] p-6 shadow-[0_28px_90px_-58px_rgba(15,23,42,0.7)] backdrop-blur-xl sm:p-7">
+    <div className="glass-panel rounded-[30px] p-6 sm:p-7">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--chat-primary-soft)] text-[var(--chat-primary-strong)]">
@@ -26,14 +26,16 @@ export default function SummaryCard({ summary }) {
         <button
           type="button"
           onClick={handleCopy}
-          className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--shell-line)] bg-white/85 text-[var(--shell-soft)] transition-all hover:border-[var(--chat-primary)]/30 hover:text-[var(--chat-primary-strong)]"
+          className="glass-pill inline-flex h-11 w-11 items-center justify-center rounded-2xl text-[var(--shell-soft)] transition-all hover:text-[var(--chat-primary-strong)]"
           title="Copy to clipboard"
         >
           {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
         </button>
       </div>
 
-      <p className="mt-5 text-sm leading-8 text-[var(--shell-copy)] sm:text-base">{summary}</p>
+      <p className="glass-subcard mt-5 rounded-[24px] px-5 py-4 text-sm leading-8 text-[var(--shell-copy)] sm:text-base">
+        {summary}
+      </p>
     </div>
   );
 }

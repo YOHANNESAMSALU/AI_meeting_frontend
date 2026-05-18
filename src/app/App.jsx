@@ -1,9 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Command, FileText, Headphones, Loader2, Sparkles } from 'lucide-react';
-import { Toaster } from 'sonner';
-import { toast } from 'sonner';
+import { Command, FileText, Headphones, Loader2 } from 'lucide-react';
+import { Toaster, toast } from 'sonner';
 import Header from './components/Header';
 import InputSection from './components/InputSection';
 import SummaryCard from './components/SummaryCard';
@@ -15,11 +14,18 @@ import EmptyState from './components/EmptyState';
 import Footer from './components/Footer';
 import ResultsHeader from './components/ResultsHeader';
 import ThreeBackground from './components/ThreeBackground';
+import AuthModal from './components/AuthModal';
 import { summarizeMeetingNotes } from './components/audioUtils';
-import { jsPDF } from 'jspdf';
+import {
+  getStoredUser,
+  clearStoredSession,
+  validateToken,
+  fetchCurrentUser,
+  exportMeetingPdf,
+  sendMeetingEmail,
+  isUnauthorizedError,
+} from './lib/api';
 
-
-// Helper to extract decisions and action items from transcript (basic demo)
 function extractDecisionsAndActions(transcript) {
   const lines = transcript.split('\n').filter((line) => line.trim());
   const decisionKeywords = ['decided', 'agreed', 'approved', 'will', 'going to', 'confirmed'];
@@ -29,7 +35,8 @@ function extractDecisionsAndActions(transcript) {
     .map((line) => line.replace(/^[-•*]\s*/, ''));
   const actionVerbs = ['create', 'update', 'send', 'schedule', 'review', 'complete', 'finalize', 'prepare'];
   const names = ['Sarah', 'John', 'Mike', 'Emily', 'Alex', 'Lisa', 'David', 'Anna'];
-  let actionItems = lines
+
+  const actionItems = lines
     .filter((line) => {
       const lower = line.toLowerCase();
       return actionVerbs.some((verb) => lower.includes(verb)) || names.some((name) => line.includes(name));
@@ -38,198 +45,311 @@ function extractDecisionsAndActions(transcript) {
     .map((line, index) => {
       const cleanLine = line.replace(/^[-•*]\s*/, '');
       let assignee = names[index % names.length];
+
       for (const name of names) {
         if (line.includes(name)) {
           assignee = name;
           break;
         }
       }
+
       return {
         task: cleanLine,
         assignee,
       };
     });
+
   return { decisions, actionItems };
 }
 
+function buildMeetingFileName(meeting) {
+  const baseValue = String(meeting?.title || `meeting-${meeting?.id || Date.now()}`)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  return `${baseValue || 'meeting-recap'}.pdf`;
+}
+
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
+}
+
+function isMobileViewport() {
+  return typeof window !== 'undefined' && window.matchMedia('(max-width: 1023px)').matches;
+}
+
 export default function App() {
-  const HISTORY_STORAGE_KEY = 'meeting-recaps-history-v1';
   const [notes, setNotes] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState(null);
-  const [meetingHistory, setMeetingHistory] = useState([]);
-  const [activeHistoryId, setActiveHistoryId] = useState(null);
+  const [activeMeetingId, setActiveMeetingId] = useState(null);
   const [attendees, setAttendees] = useState('');
+  const [attachPdfToEmail, setAttachPdfToEmail] = useState(true);
+  const [user, setUser] = useState(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(true);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(HISTORY_STORAGE_KEY);
-      if (!stored) {
+    const checkAuth = async () => {
+      const storedUser = getStoredUser();
+
+      if (!storedUser) {
         return;
       }
 
-      const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed)) {
-        setMeetingHistory(parsed);
+      try {
+        const validUser = await validateToken();
+        setUser(validUser);
+      } catch (error) {
+        console.log('Stored token is invalid, clearing session');
+        setUser(null);
       }
-    } catch (error) {
-      console.error('Could not load meeting history:', error);
-    }
+    };
+
+    checkAuth();
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(meetingHistory));
-  }, [meetingHistory]);
+  const handleSessionExpired = ({ notify = true } = {}) => {
+    clearStoredSession();
+    setUser(null);
+    setShowAuthModal(true);
 
-  const saveToHistory = (nextResults, sourceNotes) => {
-    const nextItem = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      createdAt: new Date().toISOString(),
-      notes: sourceNotes,
-      summary: nextResults.summary,
-      decisions: nextResults.decisions,
-      actionItems: nextResults.actionItems,
-    };
-    setActiveHistoryId(nextItem.id);
-    setMeetingHistory((current) => [nextItem, ...current].slice(0, 20));
+    if (notify) {
+      toast.error('Your session expired. Please sign in again.');
+    }
   };
 
+  const saveToHistory = (nextResults) => {
+    if (nextResults.meeting?.id) {
+      setActiveMeetingId(nextResults.meeting.id);
+    }
+  };
+
+  const closeHistoryPanelOnMobile = () => {
+    if (isMobileViewport()) {
+      setIsHistoryOpen(false);
+    }
+  };
 
   const handleGenerate = async () => {
     if (!notes.trim()) {
       return;
     }
+
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
+
     setIsLoading(true);
     setResults(null);
+
     try {
       const response = await summarizeMeetingNotes(notes);
       const fallback = extractDecisionsAndActions(response.transcript || notes);
-
-      setResults({
+      const nextResults = {
         summary: response.summary,
         decisions: response.decisions?.length ? response.decisions : fallback.decisions,
         actionItems: response.actionItems?.length ? response.actionItems : fallback.actionItems,
-      });
-      saveToHistory(
-        {
-          summary: response.summary,
-          decisions: response.decisions?.length ? response.decisions : fallback.decisions,
-          actionItems: response.actionItems?.length ? response.actionItems : fallback.actionItems,
-        },
-        response.transcript || notes,
-      );
+        meeting: response.meeting,
+      };
+
+      setResults(nextResults);
+      saveToHistory(nextResults);
+      setIsHistoryOpen(true);
     } catch (error) {
       console.error('Error processing notes:', error);
+      if (isUnauthorizedError(error)) {
+        handleSessionExpired();
+        return;
+      }
       toast.error(error instanceof Error ? error.message : 'We could not generate the recap right now.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Handle backend audio transcript/summary integration
   const handleAudioTranscript = (audioResult) => {
-    if (!audioResult) return;
-    setNotes(audioResult.transcript);
+    if (!audioResult) {
+      return;
+    }
+
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
+
     const fallback = extractDecisionsAndActions(audioResult.transcript);
-    setResults({
+    const nextResults = {
       summary: audioResult.summary,
       decisions: audioResult.decisions?.length ? audioResult.decisions : fallback.decisions,
       actionItems: audioResult.actionItems?.length ? audioResult.actionItems : fallback.actionItems,
-    });
-    saveToHistory(
-      {
-        summary: audioResult.summary,
-        decisions: audioResult.decisions?.length ? audioResult.decisions : fallback.decisions,
-        actionItems: audioResult.actionItems?.length ? audioResult.actionItems : fallback.actionItems,
-      },
-      audioResult.transcript,
-    );
+      meeting: audioResult.meeting,
+    };
+
+    setNotes(audioResult.transcript);
+    setResults(nextResults);
+    saveToHistory(nextResults);
     setIsLoading(false);
+    setIsHistoryOpen(true);
   };
 
   const handleTryExample = (exampleNotes) => {
-    setActiveHistoryId(null);
+    setActiveMeetingId(null);
     setNotes(exampleNotes);
     window.scrollTo({ top: 10, behavior: 'smooth' });
   };
 
   const handleReset = () => {
-    setActiveHistoryId(null);
+    setActiveMeetingId(null);
     setNotes('');
     setResults(null);
+    setAttendees('');
+    setAttachPdfToEmail(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleSelectHistoryItem = (item) => {
-    setActiveHistoryId(item.id);
-    setNotes(item.notes || '');
+  const handleSelectHistoryItem = (meeting) => {
+    setActiveMeetingId(meeting.id);
+    setNotes(meeting.transcription || '');
     setResults({
-      summary: item.summary || '',
-      decisions: Array.isArray(item.decisions) ? item.decisions : [],
-      actionItems: Array.isArray(item.actionItems) ? item.actionItems : [],
+      summary: meeting.summary || '',
+      decisions: [],
+      actionItems: [],
+      meeting,
     });
+    closeHistoryPanelOnMobile();
     window.scrollTo({ top: 10, behavior: 'smooth' });
   };
 
-  const handleClearHistory = () => {
-    setActiveHistoryId(null);
-    setMeetingHistory([]);
-    toast.success('Meeting history cleared.');
-  };
-
-  const buildShareText = () => {
-    if (!results) {
-      return '';
-    }
-    const decisions = results.decisions.map((item) => `- ${item}`).join('\n') || '- None';
-    const actionItems =
-      results.actionItems.map((item) => `- ${item.task} (Assignee: ${item.assignee})`).join('\n') || '- None';
-
-    return `Meeting Recap
-
-Summary:
-${results.summary}
-
-Decisions:
-${decisions}
-
-Action Items:
-${actionItems}`;
-  };
-
-  const handleExportPdf = () => {
-    if (!results) {
-      return;
+  const handleAuthSuccess = async (authenticatedUser = null) => {
+    if (authenticatedUser) {
+      setUser(authenticatedUser);
     }
 
-    const doc = new jsPDF();
-    const pdfContent = buildShareText();
-    const wrapped = doc.splitTextToSize(pdfContent, 180);
-    doc.setFontSize(12);
-    doc.text(wrapped, 15, 20);
-    doc.save(`meeting-recap-${Date.now()}.pdf`);
-    toast.success('PDF downloaded.');
+    try {
+      const userData = await fetchCurrentUser();
+      setUser(userData);
+      return userData;
+    } catch (error) {
+      console.error('Failed to fetch user:', error);
+
+      if (isUnauthorizedError(error)) {
+        handleSessionExpired();
+        throw error;
+      }
+
+      if (authenticatedUser) {
+        return authenticatedUser;
+      }
+
+      throw error;
+    }
   };
 
-  const handleEmailSummary = () => {
+  const handleLogout = () => {
+    clearStoredSession();
+    setUser(null);
+    setResults(null);
+    setNotes('');
+    setAttendees('');
+    setActiveMeetingId(null);
+    toast.success('Logged out successfully');
+  };
+
+  const handleExportPdf = async () => {
     if (!results) {
       return;
     }
 
-    const recipients = attendees
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    if (!results.meeting?.id) {
+      toast.error('This recap has not been saved yet. Generate it again while signed in to export the API PDF.');
+      return;
+    }
+
+    setIsExportingPdf(true);
+
+    try {
+      const blob = await exportMeetingPdf(results.meeting.id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+
+      a.href = url;
+      a.download = buildMeetingFileName(results.meeting);
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast.success('PDF downloaded successfully.');
+    } catch (error) {
+      console.error('Failed to export PDF:', error);
+      if (isUnauthorizedError(error)) {
+        handleSessionExpired();
+        return;
+      }
+      toast.error(error instanceof Error ? error.message : 'Failed to export PDF');
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
+
+  const handleEmailSummary = async () => {
+    if (!results) {
+      return;
+    }
+
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    if (!results.meeting?.id) {
+      toast.error('Generate a saved recap before emailing attendees.');
+      return;
+    }
+
+    const attendeesList = attendees
       .split(',')
       .map((email) => email.trim())
-      .filter(Boolean)
-      .join(',');
+      .filter(Boolean);
 
-    if (!recipients) {
+    if (!attendeesList.length) {
       toast.error('Add at least one attendee email.');
       return;
     }
 
-    const subject = encodeURIComponent('Meeting recap');
-    const body = encodeURIComponent(buildShareText());
-    window.location.href = `mailto:${recipients}?subject=${subject}&body=${body}`;
+    const invalidEmails = attendeesList.filter((email) => !isValidEmail(email));
+
+    if (invalidEmails.length) {
+      toast.error(`Invalid email address: ${invalidEmails[0]}`);
+      return;
+    }
+
+    setIsSendingEmail(true);
+
+    try {
+      await sendMeetingEmail(results.meeting.id, attendeesList, attachPdfToEmail);
+      toast.success(`Recap emailed to ${attendeesList.length} attendee${attendeesList.length > 1 ? 's' : ''}.`);
+    } catch (error) {
+      console.error('Failed to send email:', error);
+      if (isUnauthorizedError(error)) {
+        handleSessionExpired();
+        return;
+      }
+      toast.error(error instanceof Error ? error.message : 'Failed to send email');
+    } finally {
+      setIsSendingEmail(false);
+    }
   };
 
   useEffect(() => {
@@ -244,7 +364,9 @@ ${actionItems}`;
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [notes, isLoading]);
+  }, [notes, isLoading, user]);
+
+  const canShareMeeting = Boolean(user && results?.meeting?.id);
 
   return (
     <div className="relative isolate min-h-screen overflow-hidden">
@@ -252,91 +374,150 @@ ${actionItems}`;
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.16),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(249,115,22,0.12),transparent_28%)]" />
 
       <div className="relative z-10 flex min-h-screen flex-col">
-        <Header />
+        <Header
+          user={user}
+          onLogout={handleLogout}
+          onShowAuth={() => setShowAuthModal(true)}
+          isHistoryOpen={isHistoryOpen}
+          onToggleHistory={() => setIsHistoryOpen((previousValue) => !previousValue)}
+        />
 
-        <main className="flex-1 px-4 pb-10 pt-6 sm:px-6 lg:px-8 lg:pt-8">
-          <div className="mx-auto grid max-w-7xl gap-6 xl:grid-cols-[minmax(0,1.6fr)_360px]">
+        <div className="mx-auto flex w-full max-w-[1720px] flex-1 gap-6 px-4 pb-10 pt-6 sm:px-6 lg:px-8 lg:pt-8">
+          {isHistoryOpen ? (
+            <>
+              <button
+                type="button"
+                className="fixed inset-0 z-20 bg-slate-950/18 backdrop-blur-[2px] lg:hidden"
+                onClick={() => setIsHistoryOpen(false)}
+                aria-label="Close meeting history"
+              />
+              <aside className="fixed inset-y-[5.5rem] left-4 z-30 w-[min(24rem,calc(100vw-2rem))] max-w-[380px] lg:sticky lg:top-24 lg:z-10 lg:block lg:h-[calc(100vh-8rem)] lg:w-[340px] lg:flex-shrink-0">
+                <MeetingHistory
+                  onSelect={handleSelectHistoryItem}
+                  onNewChat={handleReset}
+                  user={user}
+                  activeItemId={activeMeetingId}
+                  onAuthError={handleSessionExpired}
+                  onClosePanel={() => setIsHistoryOpen(false)}
+                />
+              </aside>
+            </>
+          ) : null}
+
+          <main className="min-w-0 flex-1 space-y-6">
             <section className="space-y-6">
-              <div className="space-y-6">
-                <div className="rounded-[32px] border border-white/20 bg-[color:var(--surface-strong)] backdrop-blur-[20px] p-6 shadow-[0_10px_60px_rgba(249,115,22,0.15)]  sm:p-8">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="inline-flex items-center rounded-full bg-[var(--chat-primary-soft)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--chat-primary-strong)]">
-                      AI meeting copilot
-                    </span>
-                    <span className="inline-flex items-center rounded-full border border-[var(--shell-line)] bg-white/70 px-3 py-1 text-xs text-[var(--shell-soft)]">
-                      Chat-style workspace
-                    </span>
-                    <span className="inline-flex items-center rounded-full border border-[var(--shell-line)] bg-white/70 px-3 py-1 text-xs text-[var(--shell-soft)]">
-                      Share-ready output
-                    </span>
-                  </div>
-
-                  <div className="mt-5 max-w-3xl space-y-4">
-                    <h1 className="text-3xl font-semibold tracking-tight text-[var(--shell-ink)] sm:text-3xl sm:leading-[1.05]">
-                      Turn raw meeting chatter into a clean recap your team can drop into chat.
-                    </h1>
-                    <p className="max-w-2xl text-sm leading-7 text-[var(--shell-copy)] sm:text-base">
-                      Paste notes, record a voice memo, or upload a call file. The app pulls out the summary,
-                      confirmed decisions, and action items in a format that feels ready for Slack, Teams, or email.
-                    </p>
-                  </div>
+              <div className="glass-panel rounded-[34px] p-6 sm:p-8">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="glass-pill inline-flex items-center rounded-full bg-[var(--chat-primary-soft)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--chat-primary-strong)]">
+                    AI meeting copilot
+                  </span>
+                  <span className="glass-pill inline-flex items-center rounded-full px-3 py-1 text-xs text-[var(--shell-soft)]">
+                    Left-nav archive
+                  </span>
+                  <span className="glass-pill inline-flex items-center rounded-full px-3 py-1 text-xs text-[var(--shell-soft)]">
+                    API-powered sharing
+                  </span>
                 </div>
 
-                <InputSection
-                  notes={notes}
-                  setNotes={setNotes}
-                  onGenerate={handleGenerate}
-                  isLoading={isLoading}
-                  onAudioTranscript={handleAudioTranscript}
-                />
-              </div>
+                <div className="mt-5 max-w-4xl space-y-4">
+                  <h1 className="text-3xl font-semibold tracking-tight text-[var(--shell-ink)] sm:text-4xl sm:leading-[1.02]">
+                    Turn raw meeting chatter into a polished recap with history, exports, and attendee delivery built in.
+                  </h1>
+                  <p className="max-w-3xl text-sm leading-7 text-[var(--shell-copy)] sm:text-base">
+                    Paste notes, record a voice memo, or upload a call file. The workspace pulls out a summary, decisions, and action items, then lets you reopen older meetings from the left nav and share them through the deployed API.
+                  </p>
+                </div>
 
-              <div className="space-y-6">
-                {isLoading ? (
-                  <div className="rounded-[28px] border border-white/20 bg-[color:var(--surface-strong)] backdrop-blur-[20px] p-6 shadow-[0_24px_80px_-50px_rgba(15,23,42,0.65)] ">
-                    <div className="inline-flex items-center rounded-full bg-[var(--chat-primary-soft)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--chat-primary-strong)]">
-                      Generating now
-                    </div>
-                    <div className="mt-4 flex items-start gap-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--shell-ink)] text-white shadow-[0_18px_36px_-24px_rgba(15,23,42,0.9)]">
-                        <Loader2 className="h-5 w-5 animate-spin" />
+                <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                  <div className="glass-subcard rounded-2xl px-4 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[rgba(15,118,110,0.12)] text-[var(--chat-primary-strong)]">
+                        <FileText className="h-4 w-4" />
                       </div>
-                      <div className="space-y-2">
-                        <h2 className="text-xl font-semibold text-[var(--shell-ink)]">Shaping the recap</h2>
-                        <p className="text-sm leading-7 text-[var(--shell-copy)]">
-                          We are organizing the conversation into one summary, a decisions list, and an action queue.
-                        </p>
+                      <div>
+                        <p className="text-sm font-semibold text-[var(--shell-ink)]">Text-first drafting</p>
+                        <p className="text-xs leading-5 text-[var(--shell-soft)]">Paste raw notes and shape them into a share-ready update.</p>
                       </div>
                     </div>
                   </div>
-                ) : results ? (
-                  <ResultsHeader
-                    onReset={handleReset}
-                    onExportPdf={handleExportPdf}
-                    onEmailSummary={handleEmailSummary}
-                    attendees={attendees}
-                    setAttendees={setAttendees}
-                    results={results}
-                  />
-                ) : (
-                  <EmptyState onTryExample={handleTryExample} />
-                )}
+
+                  <div className="glass-subcard rounded-2xl px-4 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[rgba(249,115,22,0.12)] text-[#c2410c]">
+                        <Headphones className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-[var(--shell-ink)]">Audio capture</p>
+                        <p className="text-xs leading-5 text-[var(--shell-soft)]">Record or upload, then push the transcript right back into the composer.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="glass-subcard rounded-2xl px-4 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[rgba(30,41,59,0.1)] text-[var(--shell-ink)]">
+                        <Command className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-[var(--shell-ink)]">One-command flow</p>
+                        <p className="text-xs leading-5 text-[var(--shell-soft)]">Use Cmd/Ctrl + Enter to generate, then export or email without leaving the page.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
+
+              <InputSection
+                notes={notes}
+                setNotes={setNotes}
+                onGenerate={handleGenerate}
+                isLoading={isLoading}
+                onAudioTranscript={handleAudioTranscript}
+                user={user}
+                onAuthError={() => handleSessionExpired()}
+              />
             </section>
 
-            <aside className="xl:sticky xl:top-24 xl:h-[calc(100vh-7.5rem)]">
-              <MeetingHistory
-                items={meetingHistory}
-                onSelect={handleSelectHistoryItem}
-                onClear={handleClearHistory}
-                activeItemId={activeHistoryId}
-                onNewChat={handleReset}
-              />
-            </aside>
+            <section className="space-y-6">
+              {isLoading ? (
+                <div className="glass-panel rounded-[30px] p-6">
+                  <div className="glass-pill inline-flex items-center rounded-full bg-[var(--chat-primary-soft)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--chat-primary-strong)]">
+                    Generating now
+                  </div>
+                  <div className="mt-4 flex items-start gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--shell-ink)] text-white shadow-[0_18px_36px_-24px_rgba(15,23,42,0.9)]">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    </div>
+                    <div className="space-y-2">
+                      <h2 className="text-xl font-semibold text-[var(--shell-ink)]">Shaping the recap</h2>
+                      <p className="text-sm leading-7 text-[var(--shell-copy)]">
+                        We are organizing the conversation into one summary, a decisions list, and an action queue.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : results ? (
+                <ResultsHeader
+                  onReset={handleReset}
+                  onExportPdf={handleExportPdf}
+                  onEmailSummary={handleEmailSummary}
+                  attendees={attendees}
+                  setAttendees={setAttendees}
+                  attachPdfToEmail={attachPdfToEmail}
+                  setAttachPdfToEmail={setAttachPdfToEmail}
+                  results={results}
+                  canShareMeeting={canShareMeeting}
+                  isSendingEmail={isSendingEmail}
+                  isExportingPdf={isExportingPdf}
+                />
+              ) : (
+                <EmptyState onTryExample={handleTryExample} />
+              )}
+            </section>
 
             {isLoading && <LoadingSkeleton />}
 
-            {results && !isLoading && (
+            {results && !isLoading ? (
               <section className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
                 <SummaryCard summary={results.summary} />
                 <div className="space-y-6">
@@ -344,11 +525,17 @@ ${actionItems}`;
                   <ActionItemsCard actionItems={results.actionItems} />
                 </div>
               </section>
-            )}
-          </div>
-        </main>
+            ) : null}
+          </main>
+        </div>
 
         <Footer />
+
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          onAuthSuccess={handleAuthSuccess}
+        />
         <Toaster position="top-right" richColors closeButton />
       </div>
     </div>

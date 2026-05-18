@@ -4,7 +4,7 @@ import AudioRecorder from './AudioRecorder';
 import AudioUploader from './AudioUploader';
 import AudioTips from './AudioTips';
 
-export default function AudioSection({ onTranscript }) {
+export default function AudioSection({ onTranscript, onAuthError }) {
   const [activeTab, setActiveTab] = useState('record');
 
   const tabButtonClasses = (tab) => {
@@ -42,9 +42,9 @@ export default function AudioSection({ onTranscript }) {
 
       <div className="rounded-[24px] border border-[var(--shell-line)] bg-[var(--surface-muted)] p-4 sm:p-5">
         {activeTab === 'record' ? (
-          <AudioRecorder onTranscript={onTranscript} />
+          <AudioRecorder onTranscript={onTranscript} onAuthError={onAuthError} />
         ) : (
-          <AudioUploader onTranscript={onTranscript} />
+          <AudioUploader onTranscript={onTranscript} onAuthError={onAuthError} />
         )}
       </div>
 

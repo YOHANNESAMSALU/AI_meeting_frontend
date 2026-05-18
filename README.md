@@ -7,8 +7,8 @@
 
   Run `npm i` to install the dependencies.
 
-  The backend server is located in the sibling `../backend` folder and must be available for the recap API.
-  Leave `NEXT_PUBLIC_API_URL` empty for local development so recap requests flow through the built-in Next.js `/api` proxy.
+  The backend API is deployed and available at `https://ai-meeting-backend-dvt7.onrender.com`.
+  The frontend is configured to use `NEXT_PUBLIC_API_URL=https://ai-meeting-backend-dvt7.onrender.com` by default.
 
-  Run `npm run dev` to start both the frontend and backend together.
+  Run `npm run dev` to start the frontend.
   
