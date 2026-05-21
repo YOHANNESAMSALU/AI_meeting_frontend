@@ -9,7 +9,17 @@ export default function SummaryCard({ summary }) {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
-
+function formatSummary(raw) {
+  return (
+    raw
+      .replace(/\n/g, ' ')          // collapse all line breaks
+      .replace(/• /g, ', ')         // replace bullet + space with comma+space
+      .replace(/: ,/g, ': ')        // fix "Key Points: ," → "Key Points: "
+      .replace(/, ,/g, ',')         // remove accidental double commas
+      .replace(/,\s*$/, '')         // strip trailing comma
+      .trim() + '.'                 // end with a period
+  );
+}
   return (
     <div className="glass-panel rounded-[30px] p-6 sm:p-7">
       <div className="flex items-start justify-between gap-4">
@@ -34,7 +44,7 @@ export default function SummaryCard({ summary }) {
       </div>
 
       <p className="glass-subcard mt-5 rounded-[24px] px-5 py-4 text-sm leading-8 text-[var(--shell-copy)] sm:text-base">
-        {summary}
+      {formatSummary(summary)}
       </p>
     </div>
   );
