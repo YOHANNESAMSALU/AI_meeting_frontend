@@ -1,9 +1,11 @@
 import { MessageSquareText, Sparkles, LogOut, User, Menu, PanelLeftClose } from 'lucide-react';
 import GoogleTranslateWidget from './GoogleTranslateWidget';
+import "../../styles/app.css";
+
 
 export default function Header({ user, onLogout, onShowAuth, isHistoryOpen, onToggleHistory }) {
   return (
-    <header className="sticky top-0 z-30 border-b border-[var(--chat-primary)]/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.85),rgba(248,250,252,0.75))] backdrop-blur-2xl">
+    <header className="top-header border-b border-[var(--chat-primary)]/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.85),rgba(248,250,252,0.75))] backdrop-blur-2xl">
       <div className="mx-auto flex h-[72px] max-w-[1720px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-3">
           <button

@@ -16,6 +16,8 @@ import ResultsHeader from './components/ResultsHeader';
 import ThreeBackground from './components/ThreeBackground';
 import AuthModal from './components/AuthModal';
 import { summarizeMeetingNotes } from './components/audioUtils';
+import "../styles/app.css";
+
 import {
   getStoredUser,
   clearStoredSession,
@@ -391,14 +393,10 @@ export default function App() {
                 onClick={() => setIsHistoryOpen(false)}
                 aria-label="Close meeting history"
               />
-          <aside className="
+          <aside className="history-sidebar
                 fixed inset-y-[5.5rem] left-4 z-30
                 w-[min(24rem,calc(100vw-2rem))]
                 max-w-[380px]
-
-                lg:sticky
-                lg:top-1
-                lg:h-screen
                 lg:w-[340px]
                 lg:flex-shrink-0
               ">
