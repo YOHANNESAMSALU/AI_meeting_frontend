@@ -391,7 +391,17 @@ export default function App() {
                 onClick={() => setIsHistoryOpen(false)}
                 aria-label="Close meeting history"
               />
-              <aside className="fixed inset-y-[5.5rem] left-4 z-30 w-[min(24rem,calc(100vw-2rem))] max-w-[380px] lg:sticky lg:top-24 lg:z-10 lg:block lg:h-[calc(100vh-8rem)] lg:w-[340px] lg:flex-shrink-0">
+          <aside className="
+                fixed inset-y-[5.5rem] left-4 z-30
+                w-[min(24rem,calc(100vw-2rem))]
+                max-w-[380px]
+
+                lg:sticky
+                lg:top-1
+                lg:h-screen
+                lg:w-[340px]
+                lg:flex-shrink-0
+              ">
                 <MeetingHistory
                   onSelect={handleSelectHistoryItem}
                   onNewChat={handleReset}
@@ -455,13 +465,13 @@ export default function App() {
 
                   <div className="glass-subcard rounded-2xl px-4 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[rgba(30,41,59,0.1)] text-[var(--shell-ink)]">
+                      {/* <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[rgba(30,41,59,0.1)] text-[var(--shell-ink)]">
                         <Command className="h-4 w-4" />
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-[var(--shell-ink)]">One-command flow</p>
                         <p className="text-xs leading-5 text-[var(--shell-soft)]">Use Cmd/Ctrl + Enter to generate, then export or email without leaving the page.</p>
-                      </div>
+                      </div> */}
                     </div>
                   </div>
                 </div>

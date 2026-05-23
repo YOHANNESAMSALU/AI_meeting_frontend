@@ -1,6 +1,6 @@
 import { apiRequest } from '../lib/api';
 
-export const MAX_RECORDING_SECONDS = 5 * 60;
+export const MAX_RECORDING_SECONDS = 20 * 60;
 
 function normalizeText(value) {
   return typeof value === 'string' ? value.trim() : '';
