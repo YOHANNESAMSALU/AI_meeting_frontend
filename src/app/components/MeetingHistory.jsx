@@ -1,12 +1,12 @@
+// MeetingHistory.jsx
 import { useState, useEffect } from "react";
 import {
   History,
-  RotateCcw,
+  RefreshCw,
   Trash2,
   Download,
   Mail,
   PanelLeftClose,
-  RefreshCw,
 } from "lucide-react";
 import {
   fetchMeetings,
@@ -17,6 +17,11 @@ import {
   clearStoredSession,
 } from "../lib/api";
 import { toast } from "sonner";
+
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 
 function formatDateTime(value) {
   try {
@@ -41,10 +46,9 @@ export default function MeetingHistory({
   useEffect(() => {
     if (user) {
       loadMeetings();
-      return;
+    } else {
+      setMeetings([]);
     }
-
-    setMeetings([]);
   }, [user]);
 
   const loadMeetings = async () => {
@@ -59,9 +63,7 @@ export default function MeetingHistory({
         onAuthError?.();
         return;
       }
-      toast.error(
-        error instanceof Error ? error.message : "Failed to load meetings",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to load meetings");
     } finally {
       setIsLoading(false);
     }
@@ -83,9 +85,7 @@ export default function MeetingHistory({
         onAuthError?.();
         return;
       }
-      toast.error(
-        error instanceof Error ? error.message : "Failed to delete meeting",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to delete meeting");
     } finally {
       setDeletingId(null);
     }
@@ -111,9 +111,7 @@ export default function MeetingHistory({
         onAuthError?.();
         return;
       }
-      toast.error(
-        error instanceof Error ? error.message : "Failed to export PDF",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to export PDF");
     }
   };
 
@@ -123,11 +121,7 @@ export default function MeetingHistory({
     if (!attendees) return;
 
     try {
-      const attendeeList = attendees
-        .split(",")
-        .map((email) => email.trim())
-        .filter(Boolean);
-
+      const attendeeList = attendees.split(",").map((email) => email.trim()).filter(Boolean);
       await sendMeetingEmail(meetingId, attendeeList, true);
       toast.success("Email sent successfully");
     } catch (error) {
@@ -137,143 +131,145 @@ export default function MeetingHistory({
         onAuthError?.();
         return;
       }
-      toast.error(
-        error instanceof Error ? error.message : "Failed to send email",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to send email");
     }
   };
 
   return (
-    <div className="glass-panel flex h-full flex-col rounded-[32px] p-4 sm:p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[rgba(15,118,110,0.12)] text-[var(--chat-primary-strong)]">
-            <History className="h-5 w-5" />
+    <div className="flex h-full flex-col">
+      <CardHeader className="flex-shrink-0 pb-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[rgba(15,118,110,0.12)] text-[var(--chat-primary-strong)]">
+              <History className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--chat-primary-strong)]">
+                HISTORY
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--chat-primary-strong)]">
-              History
-            </p>
-          </div>
+
+          {onClosePanel && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClosePanel}
+              className="h-10 w-10 rounded-xl"
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </Button>
+          )}
         </div>
+      </CardHeader>
 
-        {onClosePanel ? (
-          <button
-            type="button"
-            onClick={onClosePanel}
-            className="glass-pill inline-flex h-10 w-10 items-center justify-center rounded-2xl text-[var(--shell-soft)] transition-colors hover:text-[var(--shell-ink)]"
-            title="Hide history"
-          >
-            <PanelLeftClose className="h-4 w-4" />
-          </button>
-        ) : null}
-      </div>
+      <Separator className="mb-4" />
 
-      <div className="mt-4 grid gap-2 sm:grid-cols-2">
-
-        <button
-          type="button"
+      <div className="px-1 pb-4">
+        <Button
           onClick={loadMeetings}
           disabled={!user || isLoading}
-          className="glass-subcard inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-[var(--shell-ink)] transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-55"
+          variant="outline"
+          className="w-full gap-2"
         >
           <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
-          Refresh
-        </button>
+          Refresh Meetings
+        </Button>
       </div>
 
-      {!user ? (
-        <div className="glass-subcard mt-5 rounded-[26px] px-4 py-5 text-sm leading-7 text-[var(--shell-soft)]">
-          Sign in to see the meetings saved under your account and to email or
-          export them later.
-        </div>
-      ) : isLoading ? (
-        <div className="glass-subcard mt-5 rounded-[26px] px-4 py-5 text-sm text-[var(--shell-soft)]">
-          Loading meetings...
-        </div>
-      ) : meetings.length === 0 ? (
-        <div className="glass-subcard mt-5 rounded-[26px] px-4 py-5 text-sm leading-7 text-[var(--shell-soft)]">
-          No meetings yet. Generate a recap and it will appear here
-          automatically.
-        </div>
-      ) : (
-        <div className="mt-5 flex-1 overflow-hidden">
-          <div className="h-full space-y-3 overflow-y-auto pr-1">
-            {meetings.map((meeting) => {
-              const isActive = activeItemId === meeting.id;
+      <div className="flex-1 px-1 overflow-hidden">
+        {!user ? (
+          <Card>
+            <CardContent className="py-8 text-center text-sm text-muted-foreground">
+              Sign in to see the meetings saved under your account and to email or export them later.
+            </CardContent>
+          </Card>
+        ) : isLoading ? (
+          <Card>
+            <CardContent className="py-8 text-center text-sm text-muted-foreground">
+              Loading meetings...
+            </CardContent>
+          </Card>
+        ) : meetings.length === 0 ? (
+          <Card>
+            <CardContent className="py-8 text-center text-sm text-muted-foreground">
+              No meetings yet. Generate a recap and it will appear here automatically.
+            </CardContent>
+          </Card>
+        ) : (
+          <ScrollArea className="h-[calc(100vh-280px)] pr-4">
+            <div className="space-y-3 pb-6">
+              {meetings.map((meeting) => {
+                const isActive = activeItemId === meeting.id;
 
-              return (
-                <div
-                  key={meeting.id}
-                  className={`glass-subcard rounded-[26px] p-4 transition-all ${
-                    isActive
-                      ? "ring-2 ring-[rgba(15,118,110,0.24)]"
-                      : "hover:-translate-y-0.5"
-                  }`}
-                >
-                  <button
-                    type="button"
+                return (
+                  <Card
+                    key={meeting.id}
+                    className={`cursor-pointer transition-all hover:shadow-md ${
+                      isActive ? "ring-2 ring-teal-500/30 bg-teal-50/50" : ""
+                    }`}
                     onClick={() => onSelect(meeting)}
-                    className="w-full text-left"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs text-[var(--shell-soft)]">
-                          {formatDateTime(meeting.created_at)}
-                        </p>
-                        <p className="mt-2 truncate text-sm font-semibold text-[var(--shell-ink)]">
-                          {meeting.title || `Meeting ${meeting.id}`}
-                        </p>
+                    <CardContent className="p-5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs text-muted-foreground">
+                            {formatDateTime(meeting.created_at)}
+                          </p>
+                          <p className="mt-1.5 font-semibold leading-tight">
+                            {meeting.title || `Meeting ${meeting.id}`}
+                          </p>
+                        </div>
+                        <span className="glass-pill shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-[var(--chat-primary-strong)]">
+                          {meeting.source || "saved"}
+                        </span>
                       </div>
-                      <span className="glass-pill inline-flex shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--chat-primary-strong)]">
-                        {meeting.source || "saved"}
-                      </span>
-                    </div>
 
-                    <p className="mt-3 text-sm leading-6 text-[var(--shell-copy)]">
-                      {String(meeting.summary || "").slice(0, 135)}
-                      {String(meeting.summary || "").length > 135 ? "..." : ""}
-                    </p>
-                  </button>
+                      <p className="mt-3 text-sm leading-relaxed text-muted-foreground line-clamp-3">
+                        {String(meeting.summary || "").slice(0, 135)}
+                        {String(meeting.summary || "").length > 135 ? "..." : ""}
+                      </p>
 
-                  <div className="mt-4 flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={(e) => handleExportPdf(meeting.id, e)}
-                      className="glass-pill inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold text-[var(--shell-ink)] transition-colors hover:text-[var(--chat-primary-strong)]"
-                      title="Export PDF"
-                    >
-                      <Download className="h-3 w-3" />
-                      PDF
-                    </button>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => handleExportPdf(meeting.id, e)}
+                          className="gap-1.5 text-xs"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                          PDF
+                        </Button>
 
-                    <button
-                      type="button"
-                      onClick={(e) => handleSendEmail(meeting.id, e)}
-                      className="glass-pill inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold text-[var(--shell-ink)] transition-colors hover:text-[var(--chat-primary-strong)]"
-                      title="Send Email"
-                    >
-                      <Mail className="h-3 w-3" />
-                      Email
-                    </button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => handleSendEmail(meeting.id, e)}
+                          className="gap-1.5 text-xs"
+                        >
+                          <Mail className="h-3.5 w-3.5" />
+                          Email
+                        </Button>
 
-                    <button
-                      type="button"
-                      onClick={(e) => handleDelete(meeting.id, e)}
-                      disabled={deletingId === meeting.id}
-                      className="glass-pill inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold text-red-600 transition-colors hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-55"
-                      title="Delete Meeting"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                      {deletingId === meeting.id ? "Deleting..." : "Delete"}
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => handleDelete(meeting.id, e)}
+                          disabled={deletingId === meeting.id}
+                          className="gap-1.5 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          {deletingId === meeting.id ? "Deleting..." : "Delete"}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </ScrollArea>
+        )}
+      </div>
     </div>
   );
 }

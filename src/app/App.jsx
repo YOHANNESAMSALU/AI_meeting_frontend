@@ -358,52 +358,72 @@ export default function App() {
 
   const canShareMeeting = Boolean(user && results?.meeting?.id);
 
-  return (
-    <div className="relative isolate min-h-screen overflow-hidden">
-      <ThreeBackground />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.16),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(249,115,22,0.12),transparent_28%)]" />
+return (
+  <div className="relative isolate min-h-screen overflow-hidden">
+    <ThreeBackground />
+    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.16),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(249,115,22,0.12),transparent_28%)]" />
 
-      <div className="relative z-10 flex min-h-screen flex-col">
-        <Header
-          user={user}
-          onLogout={handleLogout}
-          onShowAuth={() => setShowAuthModal(true)}
-          isHistoryOpen={isHistoryOpen}
-          onToggleHistory={() => setIsHistoryOpen((previousValue) => !previousValue)}
-        />
+    <div className="flex h-screen flex-col">
+      {/* Sticky Header */}
+      <Header
+        user={user}
+        onLogout={handleLogout}
+        onShowAuth={() => setShowAuthModal(true)}
+        isHistoryOpen={isHistoryOpen}
+        onToggleHistory={() => setIsHistoryOpen((prev) => !prev)}
+      />
 
-        <div className="mx-auto flex w-full max-w-[1720px] flex-1 gap-6 px-4 pb-10 pt-6 sm:px-6 lg:px-8 lg:pt-8">
-          {isHistoryOpen ? (
-            <>
-              <button
-                type="button"
-                className="fixed inset-0 z-20 bg-slate-950/18 backdrop-blur-[2px] lg:hidden"
-                onClick={() => setIsHistoryOpen(false)}
-                aria-label="Close meeting history"
+      {/* Main Content Area */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Desktop Sticky Sidebar */}
+        {isHistoryOpen && (
+          <aside className="hidden lg:flex w-[340px] flex-shrink-0 border-r border-[var(--chat-primary)]/10 bg-white/80 backdrop-blur-xl overflow-hidden">
+            <div className="h-full w-full p-4 sm:p-5">
+              <MeetingHistory
+                onSelect={handleSelectHistoryItem}
+                onNewChat={handleReset}
+                user={user}
+                activeItemId={activeMeetingId}
+                onAuthError={handleSessionExpired}
+                onClosePanel={() => setIsHistoryOpen(false)}
               />
-          <aside className="history-sidebar
-                fixed inset-y-[5.5rem] left-4 z-30
-                w-[min(24rem,calc(100vw-2rem))]
-                max-w-[380px]
-                lg:w-[340px]
-                lg:flex-shrink-0
-              ">
-                <MeetingHistory
-                  onSelect={handleSelectHistoryItem}
-                  onNewChat={handleReset}
-                  user={user}
-                  activeItemId={activeMeetingId}
-                  onAuthError={handleSessionExpired}
-                  onClosePanel={() => setIsHistoryOpen(false)}
-                />
-              </aside>
-            </>
-          ) : null}
+            </div>
+          </aside>
+        )}
 
-          <main className="min-w-0 flex-1 space-y-6">
+        {/* Mobile Sidebar */}
+        {isHistoryOpen && (
+          <>
+            <button
+              type="button"
+              className="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm lg:hidden"
+              onClick={() => setIsHistoryOpen(false)}
+              aria-label="Close meeting history"
+            />
+            <aside className="fixed inset-y-0 left-0 z-50 w-[min(92vw,380px)] lg:hidden">
+              <div className="h-full bg-white/95 backdrop-blur-2xl shadow-2xl overflow-hidden">
+                <div className="h-full p-4 sm:p-5">
+                  <MeetingHistory
+                    onSelect={handleSelectHistoryItem}
+                    onNewChat={handleReset}
+                    user={user}
+                    activeItemId={activeMeetingId}
+                    onAuthError={handleSessionExpired}
+                    onClosePanel={() => setIsHistoryOpen(false)}
+                  />
+                </div>
+              </div>
+            </aside>
+          </>
+        )}
+
+        {/* Main Scrollable Content */}
+        <main className="flex-1 overflow-y-auto">
+          <div className="mx-auto w-full max-w-[1720px] px-4 pb-10 pt-6 sm:px-6 lg:px-8 lg:pt-8">
+            {/* Your existing content goes here */}
             <section className="space-y-6">
               <div className="glass-panel rounded-[34px] p-6 sm:p-8">
-                <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                   <span className="glass-pill inline-flex items-center rounded-full bg-[var(--chat-primary-soft)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--chat-primary-strong)]">
                     AI meeting copilot
                   </span>
@@ -451,13 +471,7 @@ export default function App() {
 
                   <div className="glass-subcard rounded-2xl px-4 py-4">
                     <div className="flex items-center gap-3">
-                      {/* <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[rgba(30,41,59,0.1)] text-[var(--shell-ink)]">
-                        <Command className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-[var(--shell-ink)]">One-command flow</p>
-                        <p className="text-xs leading-5 text-[var(--shell-soft)]">Use Cmd/Ctrl + Enter to generate, then export or email without leaving the page.</p>
-                      </div> */}
+                     
                     </div>
                   </div>
                 </div>
@@ -474,7 +488,8 @@ export default function App() {
               />
             </section>
 
-            <section className="space-y-6">
+            {/* Results Section */}
+         <section className="space-y-6">
               {isLoading ? (
                 <div className="glass-panel rounded-[30px] p-6">
                   <div className="glass-pill inline-flex items-center rounded-full bg-[var(--chat-primary-soft)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--chat-primary-strong)]">
@@ -513,26 +528,27 @@ export default function App() {
 
             {isLoading && <LoadingSkeleton />}
 
-            {results && !isLoading ? (
+            {results && !isLoading && (
               <section className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,0.9fr)]">
                 <SummaryCard summary={results.summary} />
                 <div className="space-y-6">
                   <DecisionsCard decisions={results.decisions} />
                 </div>
               </section>
-            ) : null}
-          </main>
-        </div>
-
-        <Footer />
-
-        <AuthModal
-          isOpen={showAuthModal}
-          onClose={() => setShowAuthModal(false)}
-          onAuthSuccess={handleAuthSuccess}
-        />
-        <Toaster position="top-right" richColors closeButton />
+            )}
+          </div>
+        </main>
       </div>
     </div>
-  );
+
+    {/* Footer, Modals, Toaster */}
+    <Footer />
+    <AuthModal
+      isOpen={showAuthModal}
+      onClose={() => setShowAuthModal(false)}
+      onAuthSuccess={handleAuthSuccess}
+    />
+    <Toaster position="top-right" richColors closeButton />
+  </div>
+);
 }

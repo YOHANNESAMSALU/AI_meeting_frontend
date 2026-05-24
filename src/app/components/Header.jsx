@@ -1,24 +1,33 @@
+// Header.jsx
 import { MessageSquareText, Sparkles, LogOut, User, Menu, PanelLeftClose } from 'lucide-react';
 import GoogleTranslateWidget from './GoogleTranslateWidget';
-import "../../styles/app.css";
 
-
-export default function Header({ user, onLogout, onShowAuth, isHistoryOpen, onToggleHistory }) {
+export default function Header({ 
+  user, 
+  onLogout, 
+  onShowAuth, 
+  isHistoryOpen, 
+  onToggleHistory 
+}) {
   return (
-    <header className="top-header border-b border-[var(--chat-primary)]/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.85),rgba(248,250,252,0.75))] backdrop-blur-2xl">
+    <header className="sticky top-0 z-50 border-b border-[var(--chat-primary)]/10 
+                       bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(248,250,252,0.9))] 
+                       backdrop-blur-2xl">
       <div className="mx-auto flex h-[72px] max-w-[1720px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={onToggleHistory}
-            className="glass-pill inline-flex h-11 w-11 items-center justify-center rounded-2xl text-[var(--shell-ink)] transition-all hover:scale-[1.02] hover:bg-white"
+            className="glass-pill inline-flex h-11 w-11 items-center justify-center rounded-2xl text-[var(--shell-ink)] transition-all hover:scale-[1.02] hover:bg-white lg:hidden"
             aria-label={isHistoryOpen ? 'Hide meeting history' : 'Show meeting history'}
           >
             {isHistoryOpen ? <PanelLeftClose className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
+
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--chat-primary)] to-[var(--chat-primary-strong)] text-white shadow-[0_20px_42px_-28px_rgba(124,58,237,0.4)]">
             <Sparkles className="h-5 w-5" />
           </div>
+
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--chat-primary)]">
               AI Meeting Notes
@@ -31,6 +40,7 @@ export default function Header({ user, onLogout, onShowAuth, isHistoryOpen, onTo
           <div className="hidden lg:block">
             <GoogleTranslateWidget />
           </div>
+
           <div className="hidden items-center gap-2 sm:flex">
             <span className="glass-pill inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs text-[var(--shell-soft)]">
               <span className="h-2 w-2 rounded-full bg-emerald-500" />
