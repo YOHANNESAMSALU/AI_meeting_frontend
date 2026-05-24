@@ -39,20 +39,12 @@ export default function ResultsHeader({
         </div>
       </div>
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <div className="glass-subcard rounded-2xl px-4 py-3">
           <p className="text-xs text-[var(--shell-soft)]">Decisions captured</p>
           <div className="mt-2 flex items-center gap-2 text-[var(--shell-ink)]">
             <CheckCircle2 className="h-4 w-4 text-emerald-600" />
             <span className="text-lg font-semibold">{results.decisions.length}</span>
-          </div>
-        </div>
-
-        <div className="glass-subcard rounded-2xl px-4 py-3">
-          <p className="text-xs text-[var(--shell-soft)]">Action items assigned</p>
-          <div className="mt-2 flex items-center gap-2 text-[var(--shell-ink)]">
-            <ListTodo className="h-4 w-4 text-[var(--chat-primary-strong)]" />
-            <span className="text-lg font-semibold">{results.actionItems.length}</span>
           </div>
         </div>
 

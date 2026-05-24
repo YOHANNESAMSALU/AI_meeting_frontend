@@ -7,7 +7,6 @@ import Header from './components/Header';
 import InputSection from './components/InputSection';
 import SummaryCard from './components/SummaryCard';
 import DecisionsCard from './components/DecisionsCard';
-import ActionItemsCard from './components/ActionItemsCard';
 import MeetingHistory from './components/MeetingHistory';
 import LoadingSkeleton from './components/LoadingSkeleton';
 import EmptyState from './components/EmptyState';
@@ -36,28 +35,18 @@ function extractDecisionsAndActions(transcript) {
     .slice(0, 5)
     .map((line) => line.replace(/^[-•*]\s*/, ''));
   const actionVerbs = ['create', 'update', 'send', 'schedule', 'review', 'complete', 'finalize', 'prepare'];
-  const names = ['Sarah', 'John', 'Mike', 'Emily', 'Alex', 'Lisa', 'David', 'Anna'];
 
   const actionItems = lines
     .filter((line) => {
       const lower = line.toLowerCase();
-      return actionVerbs.some((verb) => lower.includes(verb)) || names.some((name) => line.includes(name));
+      return actionVerbs.some((verb) => lower.includes(verb));
     })
     .slice(0, 4)
-    .map((line, index) => {
+    .map((line) => {
       const cleanLine = line.replace(/^[-•*]\s*/, '');
-      let assignee = names[index % names.length];
-
-      for (const name of names) {
-        if (line.includes(name)) {
-          assignee = name;
-          break;
-        }
-      }
-
       return {
         task: cleanLine,
-        assignee,
+        assignee: 'Unassigned',
       };
     });
 
@@ -156,7 +145,7 @@ export default function App() {
       const nextResults = {
         summary: response.summary,
         decisions: response.decisions?.length ? response.decisions : fallback.decisions,
-        actionItems: response.actionItems?.length ? response.actionItems : fallback.actionItems,
+        // actionItems removed: backend does not provide action items
         meeting: response.meeting,
       };
 
@@ -189,7 +178,7 @@ export default function App() {
     const nextResults = {
       summary: audioResult.summary,
       decisions: audioResult.decisions?.length ? audioResult.decisions : fallback.decisions,
-      actionItems: audioResult.actionItems?.length ? audioResult.actionItems : fallback.actionItems,
+      // actionItems removed: backend does not provide action items
       meeting: audioResult.meeting,
     };
 
@@ -221,7 +210,6 @@ export default function App() {
     setResults({
       summary: meeting.summary || '',
       decisions: [],
-      actionItems: [],
       meeting,
     });
     closeHistoryPanelOnMobile();
@@ -526,11 +514,10 @@ export default function App() {
             {isLoading && <LoadingSkeleton />}
 
             {results && !isLoading ? (
-              <section className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
+              <section className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,0.9fr)]">
                 <SummaryCard summary={results.summary} />
                 <div className="space-y-6">
                   <DecisionsCard decisions={results.decisions} />
-                  <ActionItemsCard actionItems={results.actionItems} />
                 </div>
               </section>
             ) : null}
