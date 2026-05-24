@@ -41,13 +41,7 @@ export default function Header({
             <GoogleTranslateWidget />
           </div>
 
-          <div className="hidden items-center gap-2 sm:flex">
-            <span className="glass-pill inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs text-[var(--shell-soft)]">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              Live workspace
-            </span>
-           
-          </div>
+    
 
           {user ? (
             <div className="flex items-center gap-3">
