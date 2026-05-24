@@ -46,10 +46,7 @@ export default function Header({
               <span className="h-2 w-2 rounded-full bg-emerald-500" />
               Live workspace
             </span>
-            <span className="glass-pill inline-flex items-center gap-2 rounded-full bg-[var(--chat-primary-soft)] px-3 py-1.5 text-xs font-medium text-[var(--chat-primary-strong)]">
-              <MessageSquareText className="h-3.5 w-3.5" />
-              Summaries that read like a team thread
-            </span>
+           
           </div>
 
           {user ? (
