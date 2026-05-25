@@ -18,7 +18,7 @@ export default function Header({
           <button
             type="button"
             onClick={onToggleHistory}
-            className="glass-pill inline-flex h-11 w-11 items-center justify-center rounded-2xl text-[var(--shell-ink)] transition-all hover:scale-[1.02] hover:bg-white lg:hidden"
+            className="glass-pill inline-flex h-11 w-11 items-center justify-center rounded-2xl text-[var(--shell-ink)] transition-all hover:scale-[1.02] hover:bg-white"
             aria-label={isHistoryOpen ? 'Hide meeting history' : 'Show meeting history'}
           >
             {isHistoryOpen ? <PanelLeftClose className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -40,8 +40,6 @@ export default function Header({
           <div className="hidden lg:block">
             <GoogleTranslateWidget />
           </div>
-
-    
 
           {user ? (
             <div className="flex items-center gap-3">
