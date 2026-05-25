@@ -487,7 +487,16 @@ return (
                 onAuthError={() => handleSessionExpired()}
               />
             </section>
+ {isLoading && <LoadingSkeleton />}
 
+            {results && !isLoading && (
+              <section className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,0.9fr)]">
+                <SummaryCard summary={results.summary} />
+                {/* <div className="space-y-6">
+                  <DecisionsCard decisions={results.decisions} />
+                </div> */}
+              </section>
+            )}
             {/* Results Section */}
          <section className="space-y-6">
               {isLoading ? (
@@ -524,18 +533,7 @@ return (
               ) : (
                 <EmptyState onTryExample={handleTryExample} />
               )}
-            </section>
-
-            {isLoading && <LoadingSkeleton />}
-
-            {results && !isLoading && (
-              <section className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,0.9fr)]">
-                <SummaryCard summary={results.summary} />
-                <div className="space-y-6">
-                  <DecisionsCard decisions={results.decisions} />
-                </div>
-              </section>
-            )}
+            </section> 
           </div>
         </main>
       </div>
