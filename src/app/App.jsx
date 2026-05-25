@@ -490,7 +490,7 @@ return (
  {isLoading && <LoadingSkeleton />}
 
             {results && !isLoading && (
-              <section className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,0.9fr)]">
+              <section className="mt-6 mb-4 space-y-6">
                 <SummaryCard summary={results.summary} />
                 {/* <div className="space-y-6">
                   <DecisionsCard decisions={results.decisions} />
