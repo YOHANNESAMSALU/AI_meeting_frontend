@@ -25,6 +25,7 @@ import {
   exportMeetingPdf,
   sendMeetingEmail,
   isUnauthorizedError,
+  setAccessToken,
 } from './lib/api';
 
 function extractDecisionsAndActions(transcript) {
@@ -71,6 +72,55 @@ function isMobileViewport() {
   return typeof window !== 'undefined' && window.matchMedia('(max-width: 1023px)').matches;
 }
 
+function readAuthTokenFromLocation() {
+  if (typeof window === 'undefined') {
+    return '';
+  }
+
+  const url = new URL(window.location.href);
+  const candidates = [
+    url.searchParams.get('access_token'),
+    url.searchParams.get('accessToken'),
+    url.searchParams.get('token'),
+    url.searchParams.get('sessionToken'),
+    url.searchParams.get('code'),
+  ].filter(Boolean);
+
+  if (candidates.length > 0) {
+    return candidates[0].trim();
+  }
+
+  if (url.hash.startsWith('#')) {
+    const hashParams = new URLSearchParams(url.hash.slice(1));
+    const hashToken = hashParams.get('access_token') || hashParams.get('token');
+    if (hashToken) {
+      return hashToken.trim();
+    }
+  }
+
+  return '';
+}
+
+function clearAuthTokenFromLocation() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const url = new URL(window.location.href);
+  const params = url.searchParams;
+  [
+    'access_token',
+    'accessToken',
+    'token',
+    'sessionToken',
+    'reset_token',
+    'code',
+  ].forEach((key) => params.delete(key));
+
+  const nextUrl = `${url.pathname}${params.toString() ? `?${params.toString()}` : ''}${url.hash || ''}`;
+  window.history.replaceState({}, '', nextUrl);
+}
+
 export default function App() {
   const [notes, setNotes] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -86,6 +136,24 @@ export default function App() {
 
   useEffect(() => {
     const checkAuth = async () => {
+      const authToken = readAuthTokenFromLocation();
+
+      if (authToken) {
+        setAccessToken(authToken);
+
+        try {
+          const validUser = await fetchCurrentUser();
+          setUser(validUser);
+          clearAuthTokenFromLocation();
+          return;
+        } catch (error) {
+          console.error('Failed to complete redirect-based auth:', error);
+          clearStoredSession();
+          clearAuthTokenFromLocation();
+          toast.error('We could not complete sign-in. Please try again.');
+        }
+      }
+
       const storedUser = getStoredUser();
 
       if (!storedUser) {
@@ -440,7 +508,7 @@ return (
                     Turn raw meeting chatter into a polished recap with history, exports, and attendee delivery built in.
                   </h1>
                   <p className="max-w-3xl text-sm leading-7 text-[var(--shell-copy)] sm:text-base">
-                    Paste notes, record a voice memo, or upload a call file. The workspace pulls out a summary, decisions, and action items, then lets you reopen older meetings from the left nav and share them through the deployed API.
+                    Paste notes, record a voice memo, or upload a call file. The workspace pulls out a summary, decisions, and action items, then lets you reopen older meetings from the left.
                   </p>
                 </div>
 

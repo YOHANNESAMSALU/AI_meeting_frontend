@@ -25,7 +25,7 @@ export default function ResultsHeader({
             Your recap is live.
           </h2>
           <p className="mt-3 text-sm leading-7 text-[var(--shell-copy)]">
-            Share it straight from the workspace. PDF export and attendee email use the saved meeting on the deployed API.
+            Share it straight from the workspace. PDF export and attendee email use the saved meeting .
           </p>
         </div>
 
@@ -38,15 +38,8 @@ export default function ResultsHeader({
           {canShareMeeting ? 'Saved and share-ready' : 'Generate while signed in to share'}
         </div>
       </div>
-
       <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        <div className="glass-subcard rounded-2xl px-4 py-3">
-          <p className="text-xs text-[var(--shell-soft)]">Decisions captured</p>
-          <div className="mt-2 flex items-center gap-2 text-[var(--shell-ink)]">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-            <span className="text-lg font-semibold">{results.decisions.length}</span>
-          </div>
-        </div>
+      
 
         <button
           type="button"
@@ -63,7 +56,7 @@ export default function ResultsHeader({
             <span className="text-sm font-semibold">Export PDF</span>
           </div>
           <p className="text-xs leading-5 text-[var(--shell-soft)]">
-            {canShareMeeting ? 'Download the API-generated recap PDF.' : 'Available after a signed-in saved recap.'}
+            {canShareMeeting ? 'Download PDF.' : 'Available after a signed-in saved recap.'}
           </p>
         </button>
 
@@ -120,7 +113,7 @@ export default function ResultsHeader({
         </div>
 
         <p className="mt-3 text-xs leading-6 text-[var(--shell-soft)]">
-          The deployed API sends the meeting note and optionally attaches the generated PDF to every valid email address you enter.
+          The system sends the meeting note and optionally attaches the generated PDF to every valid email address you enter.
         </p>
       </div>
     </div>

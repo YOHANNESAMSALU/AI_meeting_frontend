@@ -275,6 +275,24 @@ export async function loginUser(payload, signal) {
   });
 }
 
+export async function forgotPassword(payload, signal) {
+  return apiRequest('/auth/forgot-password', {
+    method: 'POST',
+    auth: false,
+    body: payload,
+    signal,
+  });
+}
+
+export async function resetPassword(payload, signal) {
+  return apiRequest('/auth/reset-password', {
+    method: 'POST',
+    auth: false,
+    body: payload,
+    signal,
+  });
+}
+
 export async function fetchCurrentUser(signal) {
   const user = await apiRequest('/auth/me', { signal });
   setStoredUser(user);
