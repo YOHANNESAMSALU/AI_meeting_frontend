@@ -9,7 +9,23 @@ export default function AuthCallbackClient({ token }) {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!token) {
+    const tokenFromUrl = (() => {
+      if (typeof window === 'undefined') {
+        return '';
+      }
+
+      const url = new URL(window.location.href);
+      return (
+        token ||
+        url.searchParams.get('token') ||
+        url.searchParams.get('access_token') ||
+        url.searchParams.get('accessToken') ||
+        url.searchParams.get('sessionToken') ||
+        ''
+      ).trim();
+    })();
+
+    if (!tokenFromUrl) {
       clearStoredSession();
       setError('No authentication token was returned by the backend.');
       setMessage('Redirecting back to the app.');
@@ -19,7 +35,7 @@ export default function AuthCallbackClient({ token }) {
       return;
     }
 
-    setAccessToken(token);
+    setAccessToken(tokenFromUrl);
 
     setMessage('Authentication token received. Redirecting to the app...');
     window.setTimeout(() => {
