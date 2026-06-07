@@ -19,6 +19,7 @@ import "../styles/app.css";
 
 import {
   getStoredUser,
+  getAccessToken,
   clearStoredSession,
   validateToken,
   fetchCurrentUser,
@@ -147,16 +148,16 @@ export default function App() {
           clearAuthTokenFromLocation();
           return;
         } catch (error) {
-          console.error('Failed to complete redirect-based auth:', error);
           clearStoredSession();
           clearAuthTokenFromLocation();
           toast.error('We could not complete sign-in. Please try again.');
         }
       }
 
+      const storedToken = getAccessToken();
       const storedUser = getStoredUser();
 
-      if (!storedUser) {
+      if (!storedUser && !storedToken) {
         return;
       }
 
@@ -164,7 +165,6 @@ export default function App() {
         const validUser = await validateToken();
         setUser(validUser);
       } catch (error) {
-        console.log('Stored token is invalid, clearing session');
         setUser(null);
       }
     };

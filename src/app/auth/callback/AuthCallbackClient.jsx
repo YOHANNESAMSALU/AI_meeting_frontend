@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Loader2, ShieldCheck, TriangleAlert } from 'lucide-react';
+import { clearStoredSession, setAccessToken } from '../../lib/api';
 
 export default function AuthCallbackClient({ token }) {
   const [message, setMessage] = useState('Completing sign in...');
@@ -9,6 +10,7 @@ export default function AuthCallbackClient({ token }) {
 
   useEffect(() => {
     if (!token) {
+      clearStoredSession();
       setError('No authentication token was returned by the backend.');
       setMessage('Redirecting back to the app.');
       window.setTimeout(() => {
@@ -17,11 +19,11 @@ export default function AuthCallbackClient({ token }) {
       return;
     }
 
-    const target = `/?token=${encodeURIComponent(token)}`;
+    setAccessToken(token);
 
     setMessage('Authentication token received. Redirecting to the app...');
     window.setTimeout(() => {
-      window.location.replace(target);
+      window.location.replace('/');
     }, 300);
   }, [token]);
 
