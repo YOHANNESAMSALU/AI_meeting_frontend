@@ -537,11 +537,7 @@ return (
                     </div>
                   </div>
 
-                  <div className="glass-subcard rounded-2xl px-4 py-4">
-                    <div className="flex items-center gap-3">
-                     
-                    </div>
-                  </div>
+                  
                 </div>
               </div>
 
