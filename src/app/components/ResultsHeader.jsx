@@ -91,7 +91,7 @@ export default function ResultsHeader({
             />
           </div>
 
-          <label className="glass-pill inline-flex items-center gap-3 self-start rounded-2xl px-4 py-3 text-sm text-[var(--shell-ink)]">
+          {/* <label className="glass-pill inline-flex items-center gap-3 self-start rounded-2xl px-4 py-3 text-sm text-[var(--shell-ink)]">
             <input
               type="checkbox"
               checked={attachPdfToEmail}
@@ -99,7 +99,7 @@ export default function ResultsHeader({
               className="h-4 w-4 accent-[var(--chat-primary)]"
             />
             Attach PDF copy
-          </label>
+          </label> */}
 
           <button
             type="button"
